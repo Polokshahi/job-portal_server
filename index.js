@@ -10,7 +10,15 @@ const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors(
-  { origin: 'http://localhost:5173', credentials: true }
+  { 
+    origin: [
+      'http://localhost:5173', 
+      'https://jobportal-project-dbace.web.app',
+      'https://jobportal-project-dbace.firebaseapp.com',
+
+    ],
+    credentials: true 
+  }
 ));
 app.use(express.json());
 app.use(cookieParser());
@@ -38,9 +46,9 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. Successfully connected to MongoDB!");
+    // await client.connect();
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. Successfully connected to MongoDB!");
 
     const database = client.db("Job-Portal");
     const jobCollections = database.collection("Jobs");
@@ -50,13 +58,22 @@ async function run() {
     app.post('/jwt', async (req, res) => {
       const user = req.body;
       console.log(user);
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1h' });
-      res.cookie('token', token, { httpOnly: true, secure: false });
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '10h' });
+      res.cookie('token', token, { 
+        httpOnly: true, 
+         secure: process.env.NODE_ENV === "production",
+         sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      });
       res.send({ success: true });
     });
 
     app.post('/logout', (req, res) => {
-      res.clearCookie('token', { httpOnly: true, secure: false });
+      res.clearCookie('token', { 
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      
+      });
       res.send({ success: true });
     });
 
